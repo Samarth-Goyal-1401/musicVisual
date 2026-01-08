@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Search, Loader2 } from "lucide-react";
 import LyricsDisplay from "@/components/LyricsDisplay";
+import YouTubeAudioPlayer from "@/components/YouTubeAudioPlayer";
+import SongAnalysis from "@/components/SongAnalysis";
 
 interface Video {
   videoId: string;
@@ -17,6 +19,9 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState<Video[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,9 +58,14 @@ export default function Home() {
     }
   };
 
-  const handleVideoSelect = (video: Video) => {
+  const handleVideoSelect = async (video: Video) => {
     setSelectedVideo(video);
     setSearchResults([]);
+    setCurrentTime(0);
+    setAnalysis(null);
+    
+    // Start analysis when video is selected
+    await analyzeSong(video);
   };
 
   const handleNewSearch = () => {
@@ -63,6 +73,40 @@ export default function Home() {
     setSearchQuery("");
     setSearchResults([]);
     setError(null);
+    setCurrentTime(0);
+    setAnalysis(null);
+  };
+
+  const analyzeSong = async (video: Video) => {
+    setIsAnalyzing(true);
+    try {
+      // Send YouTube video info directly to Gemini
+      const analysisResponse = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoId: video.videoId,
+          title: video.title,
+          channelTitle: video.channelTitle,
+          youtubeUrl: `https://www.youtube.com/watch?v=${video.videoId}`
+        }),
+      });
+
+      if (!analysisResponse.ok) {
+        const errorData = await analysisResponse.json();
+        throw new Error(errorData.error || 'Failed to analyze song');
+      }
+
+      const analysisData = await analysisResponse.json();
+      setAnalysis(analysisData.analysis);
+    } catch (error) {
+      console.error('Analysis error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to analyze song');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   // Extract track name and artist from video title
@@ -243,14 +287,30 @@ export default function Home() {
             </div>
           )}
 
-          {/* Lyrics Display - Shows when video is selected */}
-          {trackInfo && (
-            <div className="mt-6">
-              <LyricsDisplay
-                trackName={trackInfo.trackName}
-                artistName={trackInfo.artistName}
-                currentTime={0}
+          {/* Audio Player and Lyrics Display - Shows when video is selected */}
+          {selectedVideo && (
+            <div className="mt-6 space-y-6">
+              {/* Audio Player */}
+              <YouTubeAudioPlayer
+                videoId={selectedVideo.videoId}
+                title={selectedVideo.title}
+                onTimeUpdate={setCurrentTime}
               />
+              
+              {/* Song Analysis */}
+              <SongAnalysis 
+                analysis={analysis} 
+                isLoading={isAnalyzing}
+              />
+              
+              {/* Lyrics Display */}
+              {trackInfo && (
+                <LyricsDisplay
+                  trackName={trackInfo.trackName}
+                  artistName={trackInfo.artistName}
+                  currentTime={currentTime}
+                />
+              )}
             </div>
           )}
 

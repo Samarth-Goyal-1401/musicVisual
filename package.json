@@ -12,6 +12,8 @@
     "@ai-sdk/anthropic": "^0.0.48",
     "@ai-sdk/openai": "^0.0.54",
     "@deepgram/sdk": "^3.6.0",
+    "@distube/ytdl-core": "^4.16.12",
+    "@google/generative-ai": "^0.24.1",
     "ai": "^3.3.20",
     "date-fns": "^3.6.0",
     "firebase": "^10.13.0",
@@ -21,7 +23,8 @@
     "react": "^18",
     "react-dom": "^18",
     "react-markdown": "^9.0.1",
-    "replicate": "^0.32.0"
+    "replicate": "^0.32.0",
+    "spotify-web-api-node": "^5.0.2"
   },
   "devDependencies": {
     "@types/node": "^20",
